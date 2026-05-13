@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pakistan Medicine Chatbot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            height: 600px;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            display: flex;
+            animation: slideIn 0.3s ease-in;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            justify-content: flex-end;
+        }
+
+        .message.bot {
+            justify-content: flex-start;
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            font-size: 14px;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .message.bot .message-content {
+            background: #e9ecef;
+            color: #333;
+        }
+
+        .message.bot .message-content.warning {
+            background: #fff3cd;
+            border-left: 4px solid #ff6b6b;
+            color: #721c24;
+        }
+
+        .input-area {
+            padding: 20px;
+            border-top: 1px solid #e9ecef;
+            background: white;
+            border-radius: 0 0 15px 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-field {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid #e9ecef;
+            border-radius: 25px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .reset-btn {
+            background: #6c757d;
+            padding: 10px 16px;
+            font-size: 12px;
+        }
+
+        .reset-btn:hover {
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: pulse 1.5s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 0.6;
+            }
+            50% {
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏥 Pakistan Medicine Chatbot</h1>
+            <p>Expert guidance on medicines, diseases & treatments</p>
+        </div>
+
+        <div class="chat-container" id="chatContainer"></div>
+
+        <div class="input-area">
+            <div class="input-field">
+                <input 
+                    type="text" 
+                    id="queryInput" 
+                    placeholder="Ask about medicines, diseases, symptoms..." 
+                    onkeypress="handleKeyPress(event)"
+                    autocomplete="off"
+                >
+                <button onclick="sendMessage()">Send</button>
+                <button class="reset-btn" onclick="resetChat()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://uncritical-unroomy-karma.ngrok-free.dev/api/medicine";
+        let conversationHistory = [];
+
+        function addMessage(text, isUser = true, isWarning = false) {
+            const chatContainer = document.getElementById("chatContainer");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${isUser ? "user" : "bot"}`;
+
+            const contentDiv = document.createElement("div");
+            contentDiv.className = `message-content ${isWarning ? "warning" : ""}`;
+            contentDiv.textContent = text;
+
+            messageDiv.appendChild(contentDiv);
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function isWarningResponse(text) {
+            return text.includes("⚠️") || text.includes("WARNING");
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById("queryInput");
+            const query = input.value.trim();
+
+            if (!query) {
+                alert("Please enter a question");
+                return;
+            }
+
+            // Add user message to chat
+            addMessage(query, true);
+
+            // Add user message to history
+            conversationHistory.push({
+                role: "user",
+                content: query
+            });
+
+            // Disable input while processing
+            input.disabled = true;
+            input.value = "";
+            document.querySelector("button").disabled = true;
+
+            // Show loading indicator
+            const loadingDiv = document.createElement("div");
+            loadingDiv.className = "message bot";
+            const loadingContent = document.createElement("div");
+            loadingContent.className = "message-content";
+            loadingContent.innerHTML = '<span class="loading"></span>Thinking...';
+            loadingDiv.appendChild(loadingContent);
+            document.getElementById("chatContainer").appendChild(loadingDiv);
+
+            try {
+                // Make API call with last 5 messages as context
+                const contextToSend = conversationHistory.slice(0, -1);
+                
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        query: query,
+                        context: contextToSend
+                    })
+                });
+
+                if (!response.ok) {
+                    if (response.status === 400) {
+                        throw new Error("Invalid request - please try again");
+                    } else if (response.status === 500) {
+                        throw new Error("Server error - please try again");
+                    } else {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                }
+
+                const data = await response.json();
+
+                // Remove loading indicator
+                loadingDiv.remove();
+
+                // Extract answer
+                const answer = data.ans || "I couldn't understand that. Please try again.";
+                
+                // Check if warning
+                const isWarning = isWarningResponse(answer);
+                
+                // Add bot response
+                addMessage(answer, false, isWarning);
+
+                // Add to history
+                conversationHistory.push({
+                    role: "assistant",
+                    content: answer
+                });
+
+            } catch (error) {
+                loadingDiv.remove();
+                addMessage(`Error: ${error.message}. Please check your internet and try again.`, false, false);
+                console.error("Error:", error);
+            } finally {
+                input.disabled = false;
+                document.querySelector("button").disabled = false;
+                input.focus();
+            }
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function resetChat() {
+            document.getElementById("chatContainer").innerHTML = "";
+            conversationHistory = [];
+            document.getElementById("queryInput").value = "";
+            addMessage("Chat cleared! 👋 I'm ready to help. Ask me about any medicine, disease, or health concern in Pakistan.", false);
+        }
+
+        // Initial message
+        window.addEventListener("load", () => {
+            addMessage("Hello! 👋 I'm your Pakistan medicine expert. Ask me about:\n\n• Medicines & their uses\n• Diseases & symptoms\n• How medicines work\n• Treatment options\n\nWhat can I help you with?", false);
+        });
+    </script>
+</body>
+</html>
