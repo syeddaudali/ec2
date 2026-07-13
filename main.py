@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 
 load_dotenv()
  
-app = FastAPI(title="Pakistan Medicine Chatbot", version="3.0.0")
+app = FastAPI(title="Healthcare Assistant", version="3.0.0")
  
 app.add_middleware(
     CORSMiddleware,
