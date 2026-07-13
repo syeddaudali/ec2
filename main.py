@@ -77,7 +77,7 @@ ANSWER STYLE:
 
 DISCLAIMER RULES:
 ADD DISCLAIMER (on new line with \n\n spacing) WHEN:
-✓ Suggesting/recommending specific medicines
+✓ During suggesting/recommending any medicines
 ✓ Giving dosage instructions or treatment advice
 ✓ Discussing serious symptoms or conditions
 ✓ Mentioning prescription-only medicines
@@ -131,39 +131,6 @@ REMEMBER:
 ✓ Return ONLY {"ans": "answer with or without disclaimer"}
 """
 
-def parse_groq_response(response_text: str) -> str:
-    """Parse Groq response and extract 'ans' field"""
-    try:
-        response_text = str(response_text).strip()
-        
-        # Remove markdown code blocks
-        response_text = re.sub(r'```json\n?', '', response_text)
-        response_text = re.sub(r'```\n?', '', response_text)
-        response_text = response_text.strip()
-        
-        # Find and parse JSON
-        json_match = re.search(r'\{[^{}]*"ans"[^{}]*\}', response_text, re.DOTALL)
-        
-        if json_match:
-            json_str = json_match.group(0)
-            parsed = json.loads(json_str)
-            
-            if "ans" in parsed:
-                return str(parsed["ans"]).strip()
-        
-        # Fallback: try to extract any JSON
-        json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-        if json_match:
-            parsed = json.loads(json_match.group(0))
-            if "ans" in parsed:
-                return str(parsed["ans"]).strip()
-            return str(list(parsed.values())[0]).strip() if parsed else response_text
-        
-        # If no JSON found, return text as is
-        return response_text
-        
-    except Exception:
-        return response_text
 
 # TRACEABLE FUNCTION 1: System Prompt
 @traceable(name="system-prompt", run_type="prompt")
@@ -189,20 +156,33 @@ def call_groq_api(system_prompt: str, user_message: str) -> str:
     track_user_message(user_message)
     
     payload = {
-        "model": GROQ_MODEL,
-        "messages": [
-            {
-                "role": "system",
-                "content": system_prompt
+    "model": GROQ_MODEL,
+    "messages": [
+        {
+            "role": "system",
+            "content": system_prompt
+        },
+        {
+            "role": "user",
+            "content": user_message
+        }
+    ],
+    "max_tokens": 400,
+    "temperature": 0.1,
+    "response_format": {
+        "type": "json_object",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "ans": {
+                    "type": "string",
+                    "description": "Medicine recommendation answer"
+                }
             },
-            {
-                "role": "user",
-                "content": user_message
-            }
-        ],
-        "max_tokens": 400,
-        "temperature": 0.1
+            "required": ["ans"]
+        }
     }
+}
     
     response = requests.post(GROQ_API_URL, headers=GROQ_HEADERS, json=payload, timeout=20)
     result = response.json()
@@ -252,9 +232,9 @@ RESPOND ONLY WITH VALID JSON (no markdown, no extra text):
             return {"ans": "No response received"}
         
         # Parse response to get 'ans' field
-        ans = parse_groq_response(response_text)
-        
-        return {"ans": ans}
+        response_json = json.loads(response_text)
+
+        return response_json
         
     except Exception as e:
         return {"ans": f"Error: {str(e)}"}
