@@ -13,7 +13,8 @@ from typing import List, Optional
 import requests
 from dotenv import load_dotenv
 from langsmith import traceable
- 
+from fastapi.responses import FileResponse
+
 load_dotenv()
  
 app = FastAPI(title="Pakistan Medicine Chatbot", version="3.0.0")
@@ -240,14 +241,17 @@ RESPOND ONLY WITH VALID JSON (no markdown, no extra text):
         return {"ans": f"Error: {str(e)}"}
  
 @app.get("/")
+async def serve_chat_ui():
+    return FileResponse("app.html")
+
+@app.get("/health")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "running",
         "name": "Pakistan Medicine Chatbot",
         "version": "3.0.0"
     }
- 
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
