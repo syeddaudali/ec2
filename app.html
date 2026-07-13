@@ -13,7 +13,7 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #000000 0%, #090909 100%);
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -21,19 +21,18 @@
             padding: 20px;
         }
 
-        .container {
-            width: 100%;
-            max-width: 900px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            display: flex;
-            flex-direction: column;
-            height: 600px;
-        }
+            .container {
+        width: min(95vw, 1200px);
+        height: 90vh;
+        display: flex;
+        flex-direction: column;
+        background: white;
+        border-radius: 20px;
+        overflow: hidden;
+    }
 
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #000000 0%, #000000 100%);
             color: white;
             padding: 20px;
             border-radius: 15px 15px 0 0;
@@ -196,8 +195,8 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏥 Pakistan Medicine Chatbot</h1>
-            <p>Expert guidance on medicines, diseases & treatments</p>
+            <h1> Healthcare Assistant</h1>
+            <p>Reliable information on medicines, health conditions, and treatment options.</p>
         </div>
 
         <div class="chat-container" id="chatContainer"></div>
@@ -342,7 +341,7 @@
 
         // Initial message
         window.addEventListener("load", () => {
-            addMessage("Hello! 👋 I'm your Pakistan medicine expert. Ask me about:\n\n• Medicines & their uses\n• Diseases & symptoms\n• How medicines work\n• Treatment options\n\nWhat can I help you with?", false);
+            addMessage("Professional healthcare assistant ready to help!", false);
         });
     </script>
 </body>
